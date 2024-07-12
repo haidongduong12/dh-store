@@ -1,23 +1,18 @@
-import logo from './logo.svg';
-import './App.css';
+import "./theme/bootstrap-shop-template/bootstrap-shop-template/css/style.css";
+import "./theme/bootstrap-shop-template/bootstrap-shop-template/lib/owlcarousel/assets/owl.carousel.min.css";
+
+import Header from "./component/header";
+import Footer from "./component/footer";
+import Main from "./component/main";
+import Slider from "./component/slider";
 
 function App() {
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <Header />
+      <Slider />
+      <Main />
+      <Footer />
     </div>
   );
 }

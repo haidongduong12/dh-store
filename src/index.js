@@ -1,17 +1,41 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
+import React from "react";
+import ReactDOM from "react-dom";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import App from "./App";
+import reportWebVitals from "./reportWebVitals";
+import ErrorPage from "./pages/Errorspage";
+import ProductDetails from "./pages/productDetails";
+import Cart from "./pages/Cart";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Dashboard from "./component/dashboard";
+import ProductPage from "./component/products/product";
+import EditProductModal from "./component/products/EditProductModal";
+import Categories from "./component/categories/categories";
+import EditCateModal from "./component/categories/EditCateModal";
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
+const root = ReactDOM.createRoot(document.getElementById("root"));
+
+const routing = (
   <React.StrictMode>
-    <App />
+    <Router>
+      <Routes>
+        <Route path="/" element={<App />} />
+        <Route path="/ProductDetails/:id" element={<ProductDetails />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/productPage" element={<ProductPage />} />
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/edit-products/:id" element={<EditProductModal />} />
+        <Route path="/categoryPage" element={<Categories />} />
+        <Route path="/edit-category/:id" element={<EditCateModal />} />
+        <Route path="*" element={<ErrorPage />} />
+      </Routes>
+    </Router>
   </React.StrictMode>
 );
 
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
+root.render(routing);
+
 reportWebVitals();
