@@ -2,9 +2,13 @@ import React, { useEffect, useState } from "react";
 import Header from "../component/header";
 import Footer from "../component/footer";
 import axios from "axios";
-
+import "./css/Cart.css";
+import { useNavigate } from "react-router-dom";
 const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
+  const infoUser = JSON.parse(localStorage.getItem("user"));
+  const userId = infoUser ? infoUser.id : null;
+  const navigate = useNavigate();
 
   // Function to update quantity of a specific item in cart
   const updateQuantity = (itemId, newQuantity) => {
@@ -19,8 +23,6 @@ const Cart = () => {
 
   const fetchCartItems = async () => {
     try {
-      const infoUser = JSON.parse(localStorage.getItem("user"));
-      const userId = infoUser.id;
       const response = await axios.get(
         `http://localhost:8081/react/cart-items`,
         {
@@ -33,15 +35,39 @@ const Cart = () => {
       console.error("Error fetching cart items:", error);
     }
   };
+  // Function to save cart to the database
+  const saveCart = async () => {
+    try {
+      const response = await axios.post(
+        `http://localhost:8081/react/save-cart`,
+        {
+          userId,
+          cartItems,
+        }
+      );
+      console.log(response.data);
+      alert("Update cart successfully !");
+      navigate("/checkout");
+    } catch (error) {
+      console.error("Error saving cart items:", error);
+      alert("Update cart fails !");
+    }
+  };
+
+  const subtotal = cartItems.reduce(
+    (acc, item) => acc + item.product_price * item.quantity,
+    0
+  );
 
   useEffect(() => {
     fetchCartItems();
   }, []); // Empty dependency array ensures this effect runs only once
 
   const handleInputChange = (event, itemId) => {
-    const value = event.target.value;
-    if (!isNaN(value) && value >= 1) {
-      updateQuantity(itemId, parseInt(value));
+    const value = parseInt(event.target.value);
+    const currentItem = cartItems.find((item) => item.id === itemId);
+    if (!isNaN(value) && value >= 1 && value <= currentItem.product_quantity) {
+      updateQuantity(itemId, value);
     }
   };
 
@@ -54,7 +80,9 @@ const Cart = () => {
 
   const increaseQuantity = (itemId) => {
     const currentItem = cartItems.find((item) => item.id === itemId);
-    updateQuantity(itemId, currentItem.quantity + 1);
+    if (currentItem.quantity < currentItem.product_quantity) {
+      updateQuantity(itemId, currentItem.quantity + 1);
+    }
   };
 
   return (
@@ -108,7 +136,7 @@ const Cart = () => {
                         </td>
                         <td className="align-middle">{item.product_name}</td>
                         <td className="align-middle">
-                          ${item.product_price}
+                          ${item.product_price.toFixed(2)}
                         </td>{" "}
                         {/* Assuming your item object has a 'price' property */}
                         <td className="align-middle">
@@ -125,12 +153,13 @@ const Cart = () => {
                               </button>
                             </div>
                             <input
-                              type="text"
+                              type="number"
                               className="form-control form-control-sm bg-secondary text-center"
                               value={item.quantity}
                               onChange={(event) =>
                                 handleInputChange(event, item.id)
                               }
+                              max={item.product_quantity}
                             />
                             <div className="input-group-btn">
                               <button
@@ -143,7 +172,7 @@ const Cart = () => {
                           </div>
                         </td>
                         <td className="align-middle">
-                          ${item.product_price * item.quantity}
+                          ${(item.product_price * item.quantity).toFixed(2)}
                         </td>{" "}
                         {/* Assuming your item object has a 'totalPrice' property */}
                         <td className="align-middle">
@@ -155,7 +184,7 @@ const Cart = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="5" className="text-center">
+                      <td colSpan="6" className="text-center">
                         <p>No items here</p>
                       </td>
                     </tr>
@@ -183,7 +212,9 @@ const Cart = () => {
                 <div className="card-body">
                   <div className="d-flex justify-content-between mb-3 pt-1">
                     <h6 className="font-weight-medium">Subtotal</h6>
-                    <h6 className="font-weight-medium">$150</h6>
+                    <h6 className="font-weight-medium">
+                      ${subtotal.toFixed(2)}
+                    </h6>
                   </div>
                   <div className="d-flex justify-content-between">
                     <h6 className="font-weight-medium">Shipping</h6>
@@ -193,11 +224,30 @@ const Cart = () => {
                 <div className="card-footer border-secondary bg-transparent">
                   <div className="d-flex justify-content-between mt-2">
                     <h5 className="font-weight-bold">Total</h5>
-                    <h5 className="font-weight-bold">$160</h5>
+                    <h5 className="font-weight-bold">
+                      ${(subtotal + 10).toFixed(2)}
+                    </h5>
                   </div>
-                  <button className="btn btn-block btn-primary my-3 py-3">
-                    Proceed To Checkout
-                  </button>
+                  {infoUser ? (
+                    <>
+                      <a href="#">
+                        <button
+                          className="btn btn-block btn-primary my-3 py-3"
+                          onClick={saveCart}
+                        >
+                          Proceed To Checkout
+                        </button>
+                      </a>
+                    </>
+                  ) : (
+                    <>
+                      <a href="/login">
+                        <button className="btn btn-block btn-primary my-3 py-3">
+                          Proceed To Checkout
+                        </button>
+                      </a>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

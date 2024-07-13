@@ -112,7 +112,7 @@ const ProductDetails = () => {
                           alt="logo"
                         />
                       </div>
-                      <div className="carousel-item">
+                      {/* <div className="carousel-item">
                         <img
                           className="w-100 h-100"
                           src="img/product-3.jpg"
@@ -125,7 +125,7 @@ const ProductDetails = () => {
                           src="img/product-4.jpg"
                           alt="Image"
                         />
-                      </div>
+                      </div> */}
                     </div>
                     <a
                       className="carousel-control-prev"
@@ -157,7 +157,9 @@ const ProductDetails = () => {
                     </div>
                     <small className="pt-1">(50 Reviews)</small>
                   </div>
-                  <h3 className="font-weight-semi-bold mb-4">$150.00</h3>
+                  <h3 className="font-weight-semi-bold mb-4">
+                    $ {product.product_price.toFixed(2)}
+                  </h3>
                   <p className="mb-4">
                     Volup erat ipsum diam elitr rebum et dolor. Est nonumy elitr
                     erat diam stet sit clita ea. Sanc invidunt ipsum et, labore

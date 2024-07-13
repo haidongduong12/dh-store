@@ -244,7 +244,7 @@ const Main = () => {
                       <div className="d-flex justify-content-center">
                         <h6>${items.product_price}</h6>
                         <h6 className="text-muted ml-2">
-                          <del>${items.product_price * 0.8}</del>
+                          <del>${(items.product_price / 0.8).toFixed(2)}</del>
                         </h6>
                       </div>
                     </div>

@@ -25,6 +25,7 @@ const upload = multer({ storage: storage });
 
 app.use(cors());
 app.use(bodyParser.json()); // Sử dụng body-parser để parse JSON body của request
+app.use(bodyParser.urlencoded({ extended: true }));
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
@@ -415,7 +416,7 @@ app.post("/react/add-to-cart", (req, res) => {
 app.get("/react/cart-items", (req, res) => {
   const userId = req.query.userId; // Extract userId from query parameters
   const sql = `
-    SELECT carts.*, products.product_image, products.product_name, products.product_price
+    SELECT carts.*, products.product_image, products.product_name, products.product_price,products.product_quantity
     FROM carts
     INNER JOIN products ON carts.product_id = products.id
     WHERE carts.user_id = ?
@@ -429,5 +430,39 @@ app.get("/react/cart-items", (req, res) => {
       return res.status(404).json({ error: "Cart items not found" });
     }
     res.status(200).json(results); // Return cart items with product details
+  });
+});
+// Endpoint to save cart items
+app.post("/react/save-cart", (req, res) => {
+  const { userId, cartItems } = req.body;
+
+  if (!userId || !cartItems || !Array.isArray(cartItems)) {
+    return res.status(400).json({ error: "Invalid request payload." });
+  }
+
+  // Delete existing cart items for the user
+  const deleteSql = `DELETE FROM carts WHERE user_id = ?`;
+  con.query(deleteSql, [userId], (deleteErr, deleteResults) => {
+    if (deleteErr) {
+      console.error("Error deleting cart items:", deleteErr);
+      return res.status(500).json({ error: "Error deleting cart items" });
+    }
+
+    // Insert new cart items
+    const insertSql = `INSERT INTO carts (user_id, product_id, quantity) VALUES ?`;
+    const values = cartItems.map((item) => [
+      userId,
+      item.product_id,
+      item.quantity,
+    ]);
+
+    con.query(insertSql, [values], (insertErr, insertResults) => {
+      if (insertErr) {
+        console.error("Error inserting cart items:", insertErr);
+        return res.status(500).json({ error: "Error inserting cart items" });
+      }
+
+      res.json({ message: "Cart saved successfully." });
+    });
   });
 });

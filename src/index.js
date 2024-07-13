@@ -13,6 +13,7 @@ import ProductPage from "./component/products/product";
 import EditProductModal from "./component/products/EditProductModal";
 import Categories from "./component/categories/categories";
 import EditCateModal from "./component/categories/EditCateModal";
+import Checkout from "./pages/Checkout";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 
@@ -27,6 +28,7 @@ const routing = (
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/productPage" element={<ProductPage />} />
         <Route path="/cart" element={<Cart />} />
+        <Route path="/checkout" element={<Checkout />} />
         <Route path="/edit-products/:id" element={<EditProductModal />} />
         <Route path="/categoryPage" element={<Categories />} />
         <Route path="/edit-category/:id" element={<EditCateModal />} />
