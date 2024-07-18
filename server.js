@@ -466,3 +466,475 @@ app.post("/react/save-cart", (req, res) => {
     });
   });
 });
+
+// Delete cart item by ID
+app.post("/react/delete-cart/:id", (req, res) => {
+  const id = req.params.id;
+  const sql = "DELETE FROM carts WHERE id = ?";
+
+  con.query(sql, [id], (err, result) => {
+    if (err) {
+      console.error(err);
+      return res
+        .status(500)
+        .json({ message: "An error occurred while deleting the cart item." });
+    }
+
+    if (result.affectedRows > 0) {
+      res.status(200).json({ message: "Cart item deleted successfully." });
+    } else {
+      res.status(404).json({ message: "Cart item not found." });
+    }
+  });
+});
+
+//Clear cart
+app.post("/react/clear-cart", (req, res) => {
+  const userId = req.body.userId;
+  const sql = "DELETE FROM carts WHERE user_id = ?";
+
+  con.query(sql, [userId], (err, result) => {
+    if (err) {
+      return res.status(500).json({ error: "Failed to clear cart" });
+    }
+    res.json({ message: "Cart cleared successfully" });
+  });
+});
+
+//Check out API
+//1. Update info user
+app.put("/react/update-user", (req, res) => {
+  const { userId, fullname, email, phonenumber, address } = req.body;
+  const sql = `UPDATE users SET fullname = ?, email = ?, phonenumber = ?, shipping_address = ? WHERE id = ?`;
+
+  con.query(
+    sql,
+    [fullname, email, phonenumber, address, userId],
+    (err, result) => {
+      if (err) {
+        console.error("Error updating user info:", err);
+        res.status(500).send("Failed to update user info");
+      } else {
+        res.send("User info updated successfully");
+      }
+    }
+  );
+});
+
+//2. if has info user, fetch with user_id
+app.get("/react/show-user", (req, res) => {
+  const userId = req.query.userId; // Lấy userId từ query parameters
+
+  const sql = `SELECT * FROM users WHERE id = ?`;
+
+  con.query(sql, [userId], (err, result) => {
+    if (err) {
+      console.error("Error fetching user info:", err);
+      res.status(500).send("Failed to fetch user info");
+    } else {
+      if (result.length > 0) {
+        const userInfo = result[0]; // Giả sử chỉ lấy thông tin của user đầu tiên trong kết quả
+        res.send(userInfo);
+      } else {
+        res.status(404).send("User not found");
+      }
+    }
+  });
+});
+
+//create order
+app.post("/react/create-order", async (req, res) => {
+  try {
+    const { userId, totalAmount, shipFee, status, payment, orderDetails } =
+      req.body;
+    const createdAt = new Date().toISOString().slice(0, 19).replace("T", " ");
+
+    // Insert order into 'orders' table
+    const insertOrderSql =
+      "INSERT INTO orders (user_id, total_amount, ship_fee, status, payment,created_at) VALUES (?, ?, ?, ?, ?,?)";
+    con.query(
+      insertOrderSql,
+      [userId, totalAmount, shipFee, status, payment, createdAt],
+      (err, result) => {
+        if (err) {
+          console.error("Error creating order:", err);
+          res.status(500).json({ error: "Failed to create order" });
+          return;
+        }
+
+        const orderId = result.insertId;
+
+        // Insert order details into 'order_details' table
+        const insertOrderDetailsSql =
+          "INSERT INTO order_details (order_id, product_id, quantity,created_at) VALUES ?";
+        const values = orderDetails.map((detail) => [
+          orderId,
+          detail.product_id,
+          detail.quantity,
+          createdAt,
+        ]);
+
+        con.query(insertOrderDetailsSql, [values], async (err, result) => {
+          if (err) {
+            console.error("Error creating order details:", err);
+            res.status(500).json({ error: "Failed to create order details" });
+            return;
+          }
+
+          try {
+            // Delete items from cart table
+            const deleteCartItemsSql = "DELETE FROM carts WHERE user_id = ?";
+            await con.query(deleteCartItemsSql, [userId]);
+
+            console.log("Deleted cart items for user:", userId);
+
+            res.send("Order created successfully");
+          } catch (deleteError) {
+            console.error("Error deleting cart items:", deleteError);
+            res.status(500).json({ error: "Failed to delete cart items" });
+          }
+        });
+      }
+    );
+  } catch (error) {
+    console.error("Error creating order:", error);
+    res.status(500).json({ error: "Failed to create order" });
+  }
+});
+
+app.get("/react/show-orders", (req, res) => {
+  const sql = `
+    SELECT o.id, o.user_id, u.fullname, u.shipping_address, u.phonenumber, u.username,
+           o.total_amount, o.ship_fee, o.status, o.payment, o.created_at,
+           od.product_id, p.product_name AS product_name,
+           p.product_price AS product_price,
+           p.product_image AS product_image, od.quantity
+    FROM orders o
+    JOIN users u ON o.user_id = u.id
+    JOIN order_details od ON o.id = od.order_id
+    JOIN products p ON od.product_id = p.id
+    ORDER BY o.id DESC`;
+
+  con.query(sql, (err, results) => {
+    if (err) {
+      console.error("Error fetching orders:", err);
+      res.status(500).json({ error: "Failed to fetch orders" });
+      return;
+    }
+
+    // Group orders by id and format response
+    const orders = results.reduce((acc, row) => {
+      const {
+        id,
+        user_id,
+        username,
+        fullname,
+        shipping_address,
+        phonenumber,
+        total_amount,
+        ship_fee,
+        status,
+        payment,
+        created_at,
+        product_id,
+        product_name,
+        product_price,
+        product_image,
+        quantity,
+      } = row;
+
+      if (!acc[id]) {
+        acc[id] = {
+          id,
+          user: { user_id, fullname, shipping_address, phonenumber, username }, // Object containing user information
+          total_amount,
+          ship_fee,
+          status,
+          payment,
+          created_at,
+          orderDetails: [],
+        };
+      }
+
+      acc[id].orderDetails.push({
+        product_id,
+        product_name,
+        product_price,
+        product_image,
+        quantity,
+      });
+
+      return acc;
+    }, {});
+
+    const ordersArray = Object.values(orders);
+
+    res.json(ordersArray);
+  });
+});
+
+//fetch order with id to update status
+app.get("/react/show-order/:orderId", (req, res) => {
+  const orderId = req.params.orderId;
+  const sql = "SELECT * FROM orders WHERE id = ?";
+
+  con.query(sql, [orderId], (err, result) => {
+    if (err) {
+      console.error("Error fetching order:", err);
+      res.status(500).json({ error: "Failed to fetch order" });
+      return;
+    }
+
+    if (result.length === 0) {
+      res.status(404).json({ error: "Order not found" });
+      return;
+    }
+
+    res.json(result[0]);
+  });
+});
+
+// Update order status with restriction to prevent changing from Delivered to any other status
+app.put("/react/update-order-status/:orderId", (req, res) => {
+  const orderId = req.params.orderId; // Get orderId from URL params
+  const { status } = req.body; // Get status from request body
+
+  // SQL query to fetch current status of the order
+  const getCurrentStatusSql = "SELECT status FROM orders WHERE id = ?";
+
+  con.query(getCurrentStatusSql, [orderId], (err, result) => {
+    if (err) {
+      console.error("Error fetching current order status:", err);
+      res.status(500).json({ error: "Failed to update order status" });
+      return;
+    }
+
+    if (result.length === 0) {
+      res.status(404).json({ error: `Order with id ${orderId} not found` });
+      return;
+    }
+
+    const currentStatus = result[0].status;
+
+    // Define order of statuses with restrictions
+    const statusOrder = {
+      Pending: ["Processing"],
+      Processing: ["Shipped"],
+      Shipped: ["Delivered"],
+      Delivered: [],
+    };
+
+    // Check if current status allows update to new status
+    if (
+      !statusOrder[currentStatus] ||
+      !statusOrder[currentStatus].includes(status)
+    ) {
+      res.status(400).json({
+        error: `Cannot change status from ${currentStatus} to ${status}`,
+      });
+      return;
+    }
+
+    // SQL query to update order status in the database
+    const updateStatusSql = "UPDATE orders SET status = ? WHERE id = ?";
+
+    con.query(updateStatusSql, [status, orderId], (err, result) => {
+      if (err) {
+        console.error("Error updating order status:", err);
+        res.status(500).json({ error: "Failed to update order status" });
+        return;
+      }
+
+      console.log(`Order ${orderId} status updated to ${status}`);
+      res.json({ message: `Order ${orderId} status updated to ${status}` });
+    });
+  });
+});
+
+//fetching theo order_id
+app.get("/react/view-order/:orderId", (req, res) => {
+  const orderId = req.params.orderId;
+
+  const sql = `
+    SELECT o.id, o.user_id, u.fullname, u.shipping_address, u.phonenumber, u.username,
+           o.total_amount, o.ship_fee, o.status, o.payment, o.created_at,
+           od.product_id, p.product_name AS product_name,
+           p.product_price AS product_price,
+           p.product_image AS product_image, od.quantity
+    FROM orders o
+    JOIN users u ON o.user_id = u.id
+    JOIN order_details od ON o.id = od.order_id
+    JOIN products p ON od.product_id = p.id
+    WHERE o.id = ?
+    ORDER BY o.id DESC`;
+
+  con.query(sql, [orderId], (err, results) => {
+    if (err) {
+      console.error("Error fetching order:", err);
+      res.status(500).json({ error: "Failed to fetch order" });
+      return;
+    }
+
+    // Check if any results were returned
+    if (results.length === 0) {
+      res.status(404).json({ error: "Order not found" });
+      return;
+    }
+
+    // Group orders by id and format response
+    const orders = results.reduce((acc, row) => {
+      const {
+        id,
+        user_id,
+        username,
+        fullname,
+        shipping_address,
+        phonenumber,
+        total_amount,
+        ship_fee,
+        status,
+        payment,
+        created_at,
+        product_id,
+        product_name,
+        product_price,
+        product_image,
+        quantity,
+      } = row;
+
+      if (!acc[id]) {
+        acc[id] = {
+          id,
+          user: { user_id, fullname, shipping_address, phonenumber, username }, // Object containing user information
+          total_amount,
+          ship_fee,
+          status,
+          payment,
+          created_at,
+          orderDetails: [],
+        };
+      }
+
+      acc[id].orderDetails.push({
+        product_id,
+        product_name,
+        product_price,
+        product_image,
+        quantity,
+      });
+
+      return acc;
+    }, {});
+
+    const ordersArray = Object.values(orders);
+
+    res.json(ordersArray);
+  });
+});
+
+//delete order
+app.delete("/react/delete-order/:orderId", (req, res) => {
+  const orderId = req.params.orderId;
+
+  const sql = `
+    DELETE FROM orders
+    WHERE id = ?
+  `;
+
+  con.query(sql, [orderId], (err, results) => {
+    if (err) {
+      console.error("Error deleting order:", err);
+      res.status(500).json({ error: "Failed to delete order" });
+      return;
+    }
+
+    // Check if any rows were affected (meaning an order was deleted)
+    if (results.affectedRows === 0) {
+      res.status(404).json({ error: "Order not found" });
+      return;
+    }
+
+    res.status(200).json({ message: "Order deleted successfully" });
+  });
+});
+
+//fetch with user_id
+app.get("/react/view-orders", (req, res) => {
+  const userId = req.query.userId;
+
+  const sql = `
+    SELECT o.id, o.user_id, u.fullname, u.shipping_address, u.phonenumber, u.username,
+           o.total_amount, o.ship_fee, o.status, o.payment, o.created_at,
+           od.product_id, p.product_name AS product_name,
+           p.product_price AS product_price,
+           p.product_image AS product_image, od.quantity
+    FROM orders o
+    JOIN users u ON o.user_id = u.id
+    JOIN order_details od ON o.id = od.order_id
+    JOIN products p ON od.product_id = p.id
+    WHERE o.user_id = ?
+    ORDER BY o.id DESC`;
+
+  con.query(sql, [userId], (err, results) => {
+    if (err) {
+      console.error("Error fetching orders:", err);
+      res.status(500).json({ error: "Failed to fetch orders" });
+      return;
+    }
+
+    // Check if any results were returned
+    if (results.length === 0) {
+      res.status(404).json({ error: "No orders found for this user" });
+      return;
+    }
+
+    // Group orders by id and format response
+    const orders = results.reduce((acc, row) => {
+      const {
+        id,
+        user_id,
+        username,
+        fullname,
+        shipping_address,
+        phonenumber,
+        total_amount,
+        ship_fee,
+        status,
+        payment,
+        created_at,
+        product_id,
+        product_name,
+        product_price,
+        product_image,
+        quantity,
+      } = row;
+
+      if (!acc[id]) {
+        acc[id] = {
+          id,
+          user: { user_id, fullname, shipping_address, phonenumber, username }, // Object containing user information
+          total_amount,
+          ship_fee,
+          status,
+          payment,
+          created_at,
+          orderDetails: [],
+        };
+      }
+
+      acc[id].orderDetails.push({
+        product_id,
+        product_name,
+        product_price,
+        product_image,
+        quantity,
+      });
+
+      return acc;
+    }, {});
+
+    const ordersArray = Object.values(orders);
+
+    res.json(ordersArray);
+  });
+});

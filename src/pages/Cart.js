@@ -47,7 +47,6 @@ const Cart = () => {
       );
       console.log(response.data);
       alert("Update cart successfully !");
-      navigate("/checkout");
     } catch (error) {
       console.error("Error saving cart items:", error);
       alert("Update cart fails !");
@@ -85,6 +84,45 @@ const Cart = () => {
     }
   };
 
+  const deleteCartItems = async (id) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this item?"
+    );
+    if (!confirmDelete) {
+      return; // If the user cancels, do nothing
+    }
+
+    try {
+      const response = await axios.post(
+        `http://localhost:8081/react/delete-cart/${id}`
+      );
+      if (response.status === 200) {
+        setCartItems(cartItems.filter((item) => item.id !== id));
+        alert("Cart item deleted successfully!");
+      }
+    } catch (error) {
+      console.error("Error deleting cart item:", error);
+      alert("Failed to delete cart item.");
+    }
+  };
+  // Function to clear all items in the cart
+  const clearCart = async () => {
+    if (window.confirm("Are you sure you want to clear the cart?")) {
+      try {
+        const response = await axios.post(
+          `http://localhost:8081/react/clear-cart`,
+          { userId }
+        );
+        setCartItems([]);
+        console.log(response.data);
+        alert("Cart cleared successfully!");
+      } catch (error) {
+        console.error("Error clearing cart:", error);
+        alert("Failed to clear cart!");
+      }
+    }
+  };
+
   return (
     <div>
       <Header />
@@ -115,6 +153,7 @@ const Cart = () => {
               <table className="table table-bordered text-center mb-0">
                 <thead className="bg-secondary text-dark">
                   <tr>
+                    {/* <th>#</th> */}
                     <th>Products</th>
                     <th>Name</th>
                     <th>Price</th>
@@ -127,6 +166,9 @@ const Cart = () => {
                   {cartItems && cartItems.length > 0 ? (
                     cartItems.map((item, index) => (
                       <tr key={index}>
+                        {/* <td className="align-middle">
+                          <input type="checkbox" value={item.id}></input>
+                        </td> */}
                         <td className="align-middle">
                           <img
                             src={`uploads/${item.product_image}`} // Assuming your item object has an 'image' property for the image source
@@ -176,7 +218,10 @@ const Cart = () => {
                         </td>{" "}
                         {/* Assuming your item object has a 'totalPrice' property */}
                         <td className="align-middle">
-                          <button className="btn btn-sm btn-primary">
+                          <button
+                            className="btn btn-sm btn-primary"
+                            onClick={() => deleteCartItems(item.id)}
+                          >
                             <i className="fa fa-times" />
                           </button>
                         </td>
@@ -191,6 +236,27 @@ const Cart = () => {
                   )}
                 </tbody>
               </table>
+
+              {cartItems && cartItems.length > 0 && (
+                <div className="d-flex justify-content-end mb-3">
+                  <div className="col-3">
+                    <button
+                      className="btn btn-primary btn-block py-3"
+                      onClick={saveCart}
+                    >
+                      Update Cart
+                    </button>
+                  </div>
+                  <div className="col-3">
+                    <button
+                      className="btn btn-danger btn-block py-3"
+                      onClick={clearCart}
+                    >
+                      Clear Cart
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="col-lg-4">
               <form className="mb-5" action="">
@@ -230,21 +296,20 @@ const Cart = () => {
                   </div>
                   {infoUser ? (
                     <>
-                      <a href="#">
-                        <button
-                          className="btn btn-block btn-primary my-3 py-3"
-                          onClick={saveCart}
-                        >
-                          Proceed To Checkout
-                        </button>
+                      <a
+                        href="/checkout"
+                        className="btn btn-block btn-primary my-3 py-3"
+                      >
+                        Proceed To Checkout
                       </a>
                     </>
                   ) : (
                     <>
-                      <a href="/login">
-                        <button className="btn btn-block btn-primary my-3 py-3">
-                          Proceed To Checkout
-                        </button>
+                      <a
+                        href="/login"
+                        className="btn btn-block btn-primary my-3 py-3"
+                      >
+                        Proceed To Checkout
                       </a>
                     </>
                   )}

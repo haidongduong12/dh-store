@@ -9,7 +9,7 @@ import {
 } from "@mui/material";
 import AccountCircle from "@mui/icons-material/AccountCircle";
 
-const Header = () => {
+const HeaderDash = () => {
   const [anchorEl, setAnchorEl] = useState(null);
 
   const handleMenu = (event) => {
@@ -70,4 +70,4 @@ const Header = () => {
   );
 };
 
-export default Header;
+export default HeaderDash;

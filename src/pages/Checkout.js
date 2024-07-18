@@ -2,16 +2,32 @@ import React, { Fragment, useEffect, useState } from "react";
 import Header from "../component/header";
 import Footer from "../component/footer";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const Checkout = () => {
   const [cartItems, setCartItems] = useState([]);
   const infoUser = JSON.parse(localStorage.getItem("user"));
-  // const navigate = useNavigate();
   const userId = infoUser ? infoUser.id : null;
+  const [userInfo, setUserInfo] = useState({
+    fullname: "",
+    email: "",
+    phonenumber: "",
+    address: "",
+  });
+  const [userInfoFetch, setUserInfoFetch] = useState({});
+  const [errors, setErrors] = useState({});
+  const navigate = useNavigate();
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setUserInfo({
+      ...userInfo,
+      [name]: value,
+    });
+  };
+
   const fetchCartItems = async () => {
     try {
-      const infoUser = JSON.parse(localStorage.getItem("user"));
-      const userId = infoUser.id;
       const response = await axios.get(
         `http://localhost:8081/react/cart-items`,
         {
@@ -19,9 +35,23 @@ const Checkout = () => {
         }
       );
       setCartItems(response.data);
-      console.log(cartItems); // Log the fetched data
     } catch (error) {
       console.error("Error fetching cart items:", error);
+    }
+  };
+
+  const fetchInfo = async () => {
+    try {
+      const response = await axios.get(
+        "http://localhost:8081/react/show-user",
+        {
+          params: { userId },
+        }
+      );
+      setUserInfoFetch(response.data);
+      console.log(userInfoFetch);
+    } catch (error) {
+      console.error("Error fetching user info:", error);
     }
   };
 
@@ -30,9 +60,89 @@ const Checkout = () => {
     0
   );
 
+  const validateForm = () => {
+    const newErrors = {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^[0-9]+$/;
+
+    if (!userInfo.fullname) {
+      newErrors.fullname = "Full name is required";
+    }
+    if (!userInfo.email) {
+      newErrors.email = "Email is required";
+    } else if (!emailRegex.test(userInfo.email)) {
+      newErrors.email = "Invalid email format";
+    }
+    if (!userInfo.phonenumber) {
+      newErrors.phonenumber = "Phone number is required";
+    } else if (!phoneRegex.test(userInfo.phonenumber)) {
+      newErrors.phonenumber = "Phone number must be numeric";
+    } else if (userInfo.phonenumber.length !== 10) {
+      newErrors.phonenumber = "Phone number must be exactly 10 digits";
+    }
+    if (!userInfo.address) {
+      newErrors.address = "Address is required";
+    }
+
+    setErrors(newErrors);
+
+    // Return true if there are no errors
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleUpdate = async () => {
+    if (validateForm()) {
+      try {
+        const response = await axios.put(
+          "http://localhost:8081/react/update-user",
+          {
+            userId,
+            ...userInfo,
+          }
+        );
+        alert(response.data);
+      } catch (error) {
+        console.error("Error updating user info:", error);
+        alert("Failed to update user info");
+      }
+    }
+  };
+
+  //order submit
+  const handleSubmitOrder = async () => {
+    try {
+      const orderDetails = cartItems.map((item) => ({
+        product_id: item.product_id,
+        quantity: item.quantity,
+      }));
+
+      const orderResponse = await axios.post(
+        "http://localhost:8081/react/create-order",
+        {
+          userId,
+          totalAmount: subtotal + 10,
+          shipFee: 10,
+          status: "Pending",
+          payment: "Direct Check",
+          orderDetails,
+        }
+      );
+      alert("Order placed successfully !");
+      navigate("/");
+      console.log("Order placed successfully:", orderResponse.data);
+
+      // Optionally clear cart or redirect to order confirmation page
+    } catch (error) {
+      console.error("Error placing order:", error);
+      alert("Failed to place order. Please try again later.");
+    }
+  };
+
   useEffect(() => {
+    fetchInfo();
     fetchCartItems();
   }, [userId]);
+
   return (
     <div>
       <Header></Header>
@@ -63,21 +173,171 @@ const Checkout = () => {
               <div className="mb-4">
                 <h4 className="font-weight-semi-bold mb-4">Billing Address</h4>
                 <div className="row">
-                  <div className="col-md-6 form-group">
-                    <label>First Name</label>
+                  {Object.keys(userInfoFetch).length > 0 ? ( // Kiểm tra xem userInfo có tồn tại không
+                    <>
+                      <div className="col-md-12 form-group">
+                        <label>Full Name</label>
+                        <input
+                          className="form-control"
+                          type="text"
+                          placeholder="John 12"
+                          name="fullname"
+                          value={userInfoFetch.fullname}
+                        />
+                      </div>
+                      <div className="col-md-6 form-group">
+                        <label>E-mail</label>
+                        <input
+                          className="form-control"
+                          type="text"
+                          placeholder="example@email.com"
+                          name="email"
+                          value={userInfoFetch.email}
+                        />
+                      </div>
+                      <div className="col-md-6 form-group">
+                        <label>Mobile No</label>
+                        <input
+                          className="form-control"
+                          type="text"
+                          placeholder="123 456 2789"
+                          name="phonenumber"
+                          value={userInfoFetch.phonenumber}
+                        />
+                      </div>
+                      <div className="col-md-12 form-group">
+                        <label>Address</label>
+                        <input
+                          className="form-control"
+                          type="text"
+                          placeholder="122 ACB"
+                          name="address"
+                          value={userInfoFetch.shipping_address}
+                        />
+                      </div>
+                      <div className="col-md-12 form-group d-flex justify-content-between">
+                        <div className="custom-control custom-checkbox">
+                          <input
+                            type="checkbox"
+                            className="custom-control-input"
+                            id="shipto"
+                          />
+                          <label
+                            className="custom-control-label"
+                            htmlFor="shipto"
+                            data-toggle="collapse"
+                            data-target="#shipping-address"
+                          >
+                            Ship to different address
+                          </label>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="col-md-12 form-group">
+                        <label>Full Name</label>
+                        <input
+                          className="form-control"
+                          type="text"
+                          placeholder="John"
+                          name="fullname"
+                          value={userInfo.fullname}
+                          onChange={handleChange}
+                        />
+                        {errors.fullname && (
+                          <p style={{ color: "red" }}>{errors.fullname}</p>
+                        )}
+                      </div>
+                      <div className="col-md-6 form-group">
+                        <label>E-mail</label>
+                        <input
+                          className="form-control"
+                          type="text"
+                          placeholder="example@email.com"
+                          name="email"
+                          value={userInfo.email}
+                          onChange={handleChange}
+                        />
+                        {errors.email && (
+                          <p style={{ color: "red" }}>{errors.email}</p>
+                        )}
+                      </div>
+                      <div className="col-md-6 form-group">
+                        <label>Mobile No</label>
+                        <input
+                          className="form-control"
+                          type="text"
+                          placeholder="123 456 2789"
+                          name="phonenumber"
+                          value={userInfo.phonenumber}
+                          onChange={handleChange}
+                        />
+                        {errors.phonenumber && (
+                          <p style={{ color: "red" }}>{errors.phonenumber}</p>
+                        )}
+                      </div>
+                      <div className="col-md-12 form-group">
+                        <label>Address</label>
+                        <input
+                          className="form-control"
+                          type="text"
+                          placeholder="122 ACB"
+                          name="address"
+                          value={userInfo.address}
+                          onChange={handleChange}
+                        />
+                        {errors.address && (
+                          <p style={{ color: "red" }}>{errors.address}</p>
+                        )}
+                      </div>
+                      <div className="col-md-12 form-group d-flex justify-content-between">
+                        {/* <div className="custom-control custom-checkbox">
+                          <input
+                            type="checkbox"
+                            className="custom-control-input"
+                            id="shipto"
+                          />
+                          <label
+                            className="custom-control-label"
+                            htmlFor="shipto"
+                            data-toggle="collapse"
+                            data-target="#shipping-address"
+                          >
+                            Ship to different address
+                          </label>
+                        </div> */}
+                        <div>
+                          <a
+                            href="/login"
+                            className="btn btn-primary btn-block py-3"
+                            // onClick={handleUpdate}
+                          >
+                            Add Info
+                          </a>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="collapse mb-4" id="shipping-address">
+                <h4 className="font-weight-semi-bold mb-4">Shipping Address</h4>
+                <div className="row">
+                  <div className="col-md-12 form-group">
+                    <label>Full Name</label>
                     <input
                       className="form-control"
                       type="text"
-                      placeholder="John"
+                      placeholder="John "
+                      name="fullname"
+                      value={userInfo.fullname}
+                      onChange={handleChange}
                     />
-                  </div>
-                  <div className="col-md-6 form-group">
-                    <label>Last Name</label>
-                    <input
-                      className="form-control"
-                      type="text"
-                      placeholder="Doe"
-                    />
+                    {errors.fullname && (
+                      <p style={{ color: "red" }}>{errors.fullname}</p>
+                    )}
                   </div>
                   <div className="col-md-6 form-group">
                     <label>E-mail</label>
@@ -85,183 +345,52 @@ const Checkout = () => {
                       className="form-control"
                       type="text"
                       placeholder="example@email.com"
+                      name="email"
+                      value={userInfo.email}
+                      onChange={handleChange}
                     />
+                    {errors.email && (
+                      <p style={{ color: "red" }}>{errors.email}</p>
+                    )}
                   </div>
                   <div className="col-md-6 form-group">
                     <label>Mobile No</label>
                     <input
                       className="form-control"
                       type="text"
-                      placeholder="+123 456 789"
+                      placeholder="123 456 2789"
+                      name="phonenumber"
+                      value={userInfo.phonenumber}
+                      onChange={handleChange}
                     />
+                    {errors.phonenumber && (
+                      <p style={{ color: "red" }}>{errors.phonenumber}</p>
+                    )}
                   </div>
                   <div className="col-md-12 form-group">
                     <label>Address</label>
                     <input
                       className="form-control"
                       type="text"
-                      placeholder="123 Street"
+                      placeholder="122 ACB"
+                      name="address"
+                      value={userInfo.address}
+                      onChange={handleChange}
                     />
+                    {errors.address && (
+                      <p style={{ color: "red" }}>{errors.address}</p>
+                    )}
                   </div>
-                  {/* <div className="col-md-6 form-group">
-                    <label>Address Line 2</label>
-                    <input
-                      className="form-control"
-                      type="text"
-                      placeholder="123 Street"
-                    />
-                  </div>
-                  <div className="col-md-6 form-group">
-                    <label>Country</label>
-                    <select className="custom-select">
-                      <option selected="">United States</option>
-                      <option>Afghanistan</option>
-                      <option>Albania</option>
-                      <option>Algeria</option>
-                    </select>
-                  </div>
-                  <div className="col-md-6 form-group">
-                    <label>City</label>
-                    <input
-                      className="form-control"
-                      type="text"
-                      placeholder="New York"
-                    />
-                  </div>
-                  <div className="col-md-6 form-group">
-                    <label>State</label>
-                    <input
-                      className="form-control"
-                      type="text"
-                      placeholder="New York"
-                    />
-                  </div>
-                  <div className="col-md-6 form-group">
-                    <label>ZIP Code</label>
-                    <input
-                      className="form-control"
-                      type="text"
-                      placeholder={123}
-                    />
-                  </div> */}
-                  {/* <div className="col-md-12 form-group">
-                    <div className="custom-control custom-checkbox">
-                      <input
-                        type="checkbox"
-                        className="custom-control-input"
-                        id="newaccount"
-                      />
-                      <label
-                        className="custom-control-label"
-                        htmlFor="newaccount"
+                  <div className="col-md-12 form-group d-flex justify-content-between">
+                    <div>
+                      <button
+                        className="btn btn-primary btn-block py-3"
+                        onClick={handleUpdate}
                       >
-                        Create an account
-                      </label>
-                    </div>
-                  </div> */}
-                  <div className="col-md-12 form-group">
-                    <div className="custom-control custom-checkbox">
-                      <input
-                        type="checkbox"
-                        className="custom-control-input"
-                        id="shipto"
-                      />
-                      <label
-                        className="custom-control-label"
-                        htmlFor="shipto"
-                        data-toggle="collapse"
-                        data-target="#shipping-address"
-                      >
-                        Ship to different address
-                      </label>
+                        Update Info
+                      </button>
                     </div>
                   </div>
-                </div>
-              </div>
-              <div className="collapse mb-4" id="shipping-address">
-                <h4 className="font-weight-semi-bold mb-4">Shipping Address</h4>
-                <div className="row">
-                  <div className="col-md-6 form-group">
-                    <label>First Name</label>
-                    <input
-                      className="form-control"
-                      type="text"
-                      placeholder="John"
-                    />
-                  </div>
-                  <div className="col-md-6 form-group">
-                    <label>Last Name</label>
-                    <input
-                      className="form-control"
-                      type="text"
-                      placeholder="Doe"
-                    />
-                  </div>
-                  <div className="col-md-6 form-group">
-                    <label>E-mail</label>
-                    <input
-                      className="form-control"
-                      type="text"
-                      placeholder="example@email.com"
-                    />
-                  </div>
-                  <div className="col-md-6 form-group">
-                    <label>Mobile No</label>
-                    <input
-                      className="form-control"
-                      type="text"
-                      placeholder="+123 456 789"
-                    />
-                  </div>
-                  <div className="col-md-12 form-group">
-                    <label>Address Line 1</label>
-                    <input
-                      className="form-control"
-                      type="text"
-                      placeholder="123 Street"
-                    />
-                  </div>
-                  {/* <div className="col-md-6 form-group">
-                    <label>Address Line 2</label>
-                    <input
-                      className="form-control"
-                      type="text"
-                      placeholder="123 Street"
-                    />
-                  </div>
-                  <div className="col-md-6 form-group">
-                    <label>Country</label>
-                    <select className="custom-select">
-                      <option selected="">United States</option>
-                      <option>Afghanistan</option>
-                      <option>Albania</option>
-                      <option>Algeria</option>
-                    </select>
-                  </div>
-                  <div className="col-md-6 form-group">
-                    <label>City</label>
-                    <input
-                      className="form-control"
-                      type="text"
-                      placeholder="New York"
-                    />
-                  </div>
-                  <div className="col-md-6 form-group">
-                    <label>State</label>
-                    <input
-                      className="form-control"
-                      type="text"
-                      placeholder="New York"
-                    />
-                  </div>
-                  <div className="col-md-6 form-group">
-                    <label>ZIP Code</label>
-                    <input
-                      className="form-control"
-                      type="text"
-                      placeholder={123}
-                    />
-                  </div> */}
                 </div>
               </div>
             </div>
@@ -364,7 +493,10 @@ const Checkout = () => {
                   </div>
                 </div>
                 <div className="card-footer border-secondary bg-transparent">
-                  <button className="btn btn-lg btn-block btn-primary font-weight-bold my-3 py-3">
+                  <button
+                    className="btn btn-lg btn-block btn-primary font-weight-bold my-3 py-3"
+                    onClick={handleSubmitOrder}
+                  >
                     Place Order
                   </button>
                 </div>

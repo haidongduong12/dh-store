@@ -12,7 +12,7 @@ const Header = () => {
     const storedUser = JSON.parse(localStorage.getItem("user"));
     if (storedUser) {
       setInfoUser(storedUser);
-      setLogoutTimer(setTimeout(handleLogout, 180 * 60 * 1000)); // Set timeout sau 30 phút
+      setLogoutTimer(setTimeout(handleLogout, 60 * 60 * 1000)); // Set timeout sau 5 phút
     }
 
     return () => {
@@ -70,7 +70,7 @@ const Header = () => {
         </div>
         <div className="row align-items-center py-3 px-xl-5">
           <div className="col-lg-3 d-none d-lg-block">
-            <a href="" className="text-decoration-none">
+            <a href="/" className="text-decoration-none">
               <h1 className="m-0 display-5 font-weight-semi-bold">
                 <span className="text-primary font-weight-bold border px-3 mr-1">
                   DH
@@ -96,11 +96,11 @@ const Header = () => {
             </form>
           </div>
           <div className="col-lg-3 col-6 text-right">
-            <a href="" className="btn border">
+            <a href="/cart" className="btn border">
               <i className="fas fa-heart text-primary" />
               <span className="badge">0</span>
             </a>
-            <a href="" className="btn border">
+            <a href="/wishlist" className="btn border">
               <i className="fas fa-shopping-cart text-primary" />
               <span className="badge">0</span>
             </a>
@@ -177,10 +177,10 @@ const Header = () => {
           </div> */}
           <div className="col-lg-12">
             <nav className="navbar navbar-expand-lg bg-light navbar-light py-3 py-lg-0 px-0">
-              <a href="" className="text-decoration-none d-block d-lg-none">
+              <a href="/" className="text-decoration-none d-block d-lg-none">
                 <h1 className="m-0 display-5 font-weight-semi-bold">
                   <span className="text-primary font-weight-bold border px-3 mr-1">
-                    E
+                    DH
                   </span>
                   Shopper
                 </h1>
@@ -198,33 +198,33 @@ const Header = () => {
                 id="navbarCollapse"
               >
                 <div className="navbar-nav mr-auto py-0">
-                  <a href="index.html" className="nav-item nav-link active">
+                  <a href="/" className="nav-item nav-link active">
                     Home
                   </a>
-                  <a href="shop.html" className="nav-item nav-link">
+                  <a href="/" className="nav-item nav-link">
                     Shop
                   </a>
-                  <a href="detail.html" className="nav-item nav-link">
+                  <a href="/" className="nav-item nav-link">
                     Shop Detail
                   </a>
                   <div className="nav-item dropdown">
                     <a
-                      href="#"
+                      href="/"
                       className="nav-link dropdown-toggle"
                       data-toggle="dropdown"
                     >
                       Pages
                     </a>
                     <div className="dropdown-menu rounded-0 m-0">
-                      <a href="cart.html" className="dropdown-item">
+                      <a href="/cart" className="dropdown-item">
                         Shopping Cart
                       </a>
-                      <a href="checkout.html" className="dropdown-item">
+                      <a href="/checkout" className="dropdown-item">
                         Checkout
                       </a>
                     </div>
                   </div>
-                  <a href="contact.html" className="nav-item nav-link">
+                  <a href="/contact" className="nav-item nav-link">
                     Contact
                   </a>
                 </div>
@@ -249,11 +249,14 @@ const Header = () => {
                         {infoUser.username}
                       </a>
                       <div className="dropdown-menu rounded-0 m-0">
-                        <a href="cart.html" className="dropdown-item">
-                          Dashboard
+                        <a href="/info" className="dropdown-item">
+                          Info
                         </a>
-                        <a href="checkout.html" className="dropdown-item">
-                          Checkout
+                        <a href="/history-order" className="dropdown-item">
+                          Orders
+                        </a>
+                        <a href="/dashboard" className="dropdown-item">
+                          Dashboard
                         </a>
                         <button
                           className="dropdown-item"
