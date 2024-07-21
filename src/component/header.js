@@ -6,17 +6,21 @@ import AccountCircle from "@mui/icons-material/AccountCircle";
 const Header = () => {
   const [infoUser, setInfoUser] = useState(null);
   const [logoutTimer, setLogoutTimer] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [cartItems, setCartItems] = useState([]);
+  const [roles, setRoles] = useState([]); // State for roles
+  const storedUser = JSON.parse(localStorage.getItem("user"));
+  const userId = storedUser ? storedUser.id : null;
   const navigate = useNavigate();
+
   useEffect(() => {
-    // Lấy thông tin người dùng từ localStorage khi component được render lần đầu
-    const storedUser = JSON.parse(localStorage.getItem("user"));
+    fetchCartItems();
     if (storedUser) {
       setInfoUser(storedUser);
-      setLogoutTimer(setTimeout(handleLogout, 60 * 60 * 1000)); // Set timeout sau 5 phút
+      setLogoutTimer(setTimeout(handleLogout, 60 * 60 * 1000));
     }
 
     return () => {
-      // Hủy bỏ timeout khi component bị unmount
       clearTimeout(logoutTimer);
     };
   }, []);
@@ -28,6 +32,48 @@ const Header = () => {
       window.location.reload();
     }, 500);
   };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    navigate(`/search?query=${searchTerm}`);
+  };
+
+  // Fetch cart items
+  const fetchCartItems = async () => {
+    try {
+      const response = await axios.get(
+        `http://localhost:8081/react/cart-items`,
+        {
+          params: { userId }, // Pass userId as a query parameter
+        }
+      );
+      setCartItems(response.data);
+      console.log(response.data); // Log the fetched data
+    } catch (error) {
+      console.error("Error fetching cart items:", error);
+    }
+  };
+
+  // Fetch user roles
+  const fetchUserRole = async () => {
+    try {
+      const response = await axios.get(
+        `http://localhost:8081/react/userRoles/${userId}`
+      );
+      const roles = response.data.roles;
+      setRoles(roles); // Update roles state
+      console.log(roles);
+    } catch (error) {
+      console.error("Error fetching user roles", error);
+    }
+  };
+
+  useEffect(() => {
+    if (userId) {
+      fetchUserRole();
+    }
+  }, [userId]);
+
   return (
     <>
       {/* Topbar Start */}
@@ -80,29 +126,34 @@ const Header = () => {
             </a>
           </div>
           <div className="col-lg-6 col-6 text-left">
-            <form action="">
+            <form onSubmit={handleSearch}>
               <div className="input-group">
                 <input
                   type="text"
                   className="form-control"
                   placeholder="Search for products"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
                 <div className="input-group-append">
-                  <span className="input-group-text bg-transparent text-primary">
+                  <button
+                    type="submit"
+                    className="input-group-text bg-transparent text-primary"
+                  >
                     <i className="fa fa-search" />
-                  </span>
+                  </button>
                 </div>
               </div>
             </form>
           </div>
           <div className="col-lg-3 col-6 text-right">
-            <a href="/cart" className="btn border">
+            <a href="/" className="btn border">
               <i className="fas fa-heart text-primary" />
               <span className="badge">0</span>
             </a>
-            <a href="/wishlist" className="btn border">
+            <a href="/cart" className="btn border">
               <i className="fas fa-shopping-cart text-primary" />
-              <span className="badge">0</span>
+              <span className="badge">{cartItems.length}</span>
             </a>
           </div>
         </div>
@@ -111,70 +162,6 @@ const Header = () => {
       {/* Navbar Start */}
       <div className="container-fluid mb-5">
         <div className="row border-top px-xl-5">
-          {/* <div className="col-lg-3 d-none d-lg-block">
-            <a
-              className="btn shadow-none d-flex align-items-center justify-content-between bg-primary text-white w-100"
-              data-toggle="collapse"
-              href="#navbar-vertical"
-              style={{ height: 65, marginTop: "-1px", padding: "0 30px" }}
-            >
-              <h6 className="m-0">Categories</h6>
-              <i className="fa fa-angle-down text-dark" />
-            </a>
-            <nav
-              className="collapse show navbar navbar-vertical navbar-light align-items-start p-0 border border-top-0 border-bottom-0"
-              id="navbar-vertical"
-            >
-              <div
-                className="navbar-nav w-100 overflow-hidden"
-                style={{ height: 410 }}
-              >
-                <div className="nav-item dropdown">
-                  <a href="#" className="nav-link" data-toggle="dropdown">
-                    Dresses <i className="fa fa-angle-down float-right mt-1" />
-                  </a>
-                  <div className="dropdown-menu position-absolute bg-secondary border-0 rounded-0 w-100 m-0">
-                    <a href="" className="dropdown-item">
-                      Men's Dresses
-                    </a>
-                    <a href="" className="dropdown-item">
-                      Women's Dresses
-                    </a>
-                    <a href="" className="dropdown-item">
-                      Baby's Dresses
-                    </a>
-                  </div>
-                </div>
-                <a href="" className="nav-item nav-link">
-                  Shirts
-                </a>
-                <a href="" className="nav-item nav-link">
-                  Jeans
-                </a>
-                <a href="" className="nav-item nav-link">
-                  Swimwear
-                </a>
-                <a href="" className="nav-item nav-link">
-                  Sleepwear
-                </a>
-                <a href="" className="nav-item nav-link">
-                  Sportswear
-                </a>
-                <a href="" className="nav-item nav-link">
-                  Jumpsuits
-                </a>
-                <a href="" className="nav-item nav-link">
-                  Blazers
-                </a>
-                <a href="" className="nav-item nav-link">
-                  Jackets
-                </a>
-                <a href="" className="nav-item nav-link">
-                  Shoes
-                </a>
-              </div>
-            </nav>
-          </div> */}
           <div className="col-lg-12">
             <nav className="navbar navbar-expand-lg bg-light navbar-light py-3 py-lg-0 px-0">
               <a href="/" className="text-decoration-none d-block d-lg-none">
@@ -201,26 +188,24 @@ const Header = () => {
                   <a href="/" className="nav-item nav-link active">
                     Home
                   </a>
-                  <a href="/" className="nav-item nav-link">
+                  <a href="/shop" className="nav-item nav-link">
                     Shop
                   </a>
-                  <a href="/" className="nav-item nav-link">
-                    Shop Detail
-                  </a>
+
                   <div className="nav-item dropdown">
                     <a
                       href="/"
                       className="nav-link dropdown-toggle"
                       data-toggle="dropdown"
                     >
-                      Pages
+                      About Us
                     </a>
                     <div className="dropdown-menu rounded-0 m-0">
                       <a href="/cart" className="dropdown-item">
-                        Shopping Cart
+                        Instagram
                       </a>
                       <a href="/checkout" className="dropdown-item">
-                        Checkout
+                        Facebook
                       </a>
                     </div>
                   </div>
@@ -238,7 +223,7 @@ const Header = () => {
                       style={{ display: "flex", alignItems: "center" }}
                     >
                       <a
-                        href="#"
+                        href="/history-order"
                         className="nav-link dropdown-toggle"
                         data-toggle="dropdown"
                         style={{ display: "flex", alignItems: "center" }}
@@ -249,14 +234,16 @@ const Header = () => {
                         {infoUser.username}
                       </a>
                       <div className="dropdown-menu rounded-0 m-0">
+                        {roles.includes("admin") && (
+                          <a href="/dashboard" className="dropdown-item">
+                            Dashboard
+                          </a>
+                        )}
                         <a href="/info" className="dropdown-item">
                           Info
                         </a>
                         <a href="/history-order" className="dropdown-item">
                           Orders
-                        </a>
-                        <a href="/dashboard" className="dropdown-item">
-                          Dashboard
                         </a>
                         <button
                           className="dropdown-item"
@@ -265,14 +252,6 @@ const Header = () => {
                           Logout
                         </button>
                       </div>
-                      {/* <a href="" className="btn border">
-                        <i className="fas fa-heart text-primary" />
-                        <span className="badge">0</span>
-                      </a>
-                      <a href="" className="btn border">
-                        <i className="fas fa-shopping-cart text-primary" />
-                        <span className="badge">0</span>
-                      </a> */}
                     </div>
                   ) : (
                     <>
@@ -286,14 +265,6 @@ const Header = () => {
                         <a href="/register" className="nav-item nav-link">
                           Register
                         </a>
-                        {/* <a href="" className="btn border">
-                          <i className="fas fa-heart text-primary" />
-                          <span className="badge">0</span>
-                        </a>
-                        <a href="" className="btn border">
-                          <i className="fas fa-shopping-cart text-primary" />
-                          <span className="badge">0</span>
-                        </a> */}
                       </div>
                     </>
                   )}

@@ -11,7 +11,7 @@ const Footer = () => {
             <a href="" className="text-decoration-none">
               <h1 className="mb-4 display-5 font-weight-semi-bold">
                 <span className="text-primary font-weight-bold border border-white px-3 mr-1">
-                  E
+                  DH
                 </span>
                 Shopper
               </h1>

@@ -5,7 +5,6 @@ import "./css/Errorpage.css";
 const Errorspage = () => {
   return (
     <div>
-      <h1>404 Error Page </h1>
       <p className="zoom-area">
         {/* <b>CSS</b>  */}
         Page not found !

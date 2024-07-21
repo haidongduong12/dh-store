@@ -9,6 +9,15 @@ const fs = require("fs");
 const app = express();
 const port = 8081;
 
+// const path = require("path");
+
+// Serve static files from the React app
+// app.use(express.static(path.join(__dirname, "build")));
+
+// app.get("*", (req, res) => {
+//   res.sendFile(path.join(__dirname, "build", "index.html"));
+// });
+
 // Phục vụ các file tĩnh trong thư mục uploads
 app.use("./public/uploads", express.static("./public/uploads"));
 
@@ -287,17 +296,6 @@ app.put("/react/edit-category/:categoryId", (req, res) => {
   });
 });
 
-//API addToCart
-
-// Tạo API endpoint để lấy dữ liệu từ MySQL
-// app.get("/react/users", (req, res) => {
-//   const sql = "SELECT * FROM users";
-//   con.query(sql, (err, results) => {
-//     if (err) throw err;
-//     res.json(results);
-//   });
-// });
-
 //Register API
 app.post("/react/register", async (req, res) => {
   //phai nho cai npm i body-parser
@@ -358,6 +356,26 @@ app.post("/react/login", (req, res) => {
   });
 });
 
+// API lấy thông tin người dùng dựa trên userId
+app.get("/react/userRoles/:userId", (req, res) => {
+  const userId = req.params.userId;
+  const sql = "SELECT * FROM users WHERE id = ?";
+
+  con.query(sql, [userId], (err, results) => {
+    if (err) {
+      console.error("Error fetching user roles:", err);
+      return res.status(500).json({ error: "Error fetching user roles" });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const user = results[0];
+    res.json(user); // Trả về toàn bộ thông tin của user
+  });
+});
+
 //Add to cart API
 app.post("/react/add-to-cart", (req, res) => {
   const { userId, productId, quantity } = req.body;
@@ -367,7 +385,6 @@ app.post("/react/add-to-cart", (req, res) => {
     return res.status(400).json({ error: "Invalid request body" });
   }
 
-  // Kiểm tra nếu sản phẩm đã có trong giỏ hàng của người dùng
   const checkSql = "SELECT * FROM carts WHERE user_id = ? AND product_id = ?";
   con.query(checkSql, [userId, productId], (checkErr, checkResult) => {
     if (checkErr) {
@@ -376,7 +393,6 @@ app.post("/react/add-to-cart", (req, res) => {
     }
 
     if (checkResult.length > 0) {
-      // Nếu sản phẩm đã có trong giỏ hàng, cập nhật số lượng
       const updateSql =
         "UPDATE carts SET quantity = quantity + ? WHERE user_id = ? AND product_id = ?";
       con.query(
@@ -391,7 +407,6 @@ app.post("/react/add-to-cart", (req, res) => {
         }
       );
     } else {
-      // Nếu sản phẩm chưa có trong giỏ hàng, thêm sản phẩm mới
       const insertSql =
         "INSERT INTO carts (user_id, product_id, quantity, created_at) VALUES (?, ?, ?,?)";
       con.query(
@@ -937,4 +952,127 @@ app.get("/react/view-orders", (req, res) => {
 
     res.json(ordersArray);
   });
+});
+
+//search api
+app.get("/react/search", (req, res) => {
+  const query = req.query.query;
+  const sql = "SELECT * FROM products WHERE product_name LIKE ?";
+  con.query(sql, [`%${query}%`], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(results);
+  });
+});
+
+// Related products endpoint
+app.get("/react/related-products/:productId", (req, res) => {
+  const productId = req.params.productId;
+  const sqlGetProductCategory = "SELECT category_id FROM products WHERE id = ?";
+
+  con.query(sqlGetProductCategory, [productId], (err, productResult) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+
+    if (productResult.length === 0) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    const category_id = productResult[0].category_id;
+
+    const sqlGetRelatedProducts =
+      "SELECT * FROM products WHERE category_id = ? AND id != ?";
+
+    con.query(
+      sqlGetRelatedProducts,
+      [category_id, productId],
+      (err, relatedProducts) => {
+        if (err) {
+          return res.status(500).json({ error: err.message });
+        }
+
+        res.json(relatedProducts); // Trả về dữ liệu relatedProducts thay vì câu truy vấn sqlGetRelatedProducts
+      }
+    );
+  });
+});
+
+//Reviews
+//show
+app.get("/react/comments/:productId", async (req, res) => {
+  try {
+    const productId = req.params.productId;
+
+    const selectCommentsSql = `
+      SELECT comments.*, users.username, users.fullname
+      FROM comments
+      JOIN users ON comments.user_id = users.id
+      WHERE comments.product_id = ?
+    `;
+
+    con.query(selectCommentsSql, [productId], (err, results) => {
+      if (err) {
+        console.error("Error fetching comments:", err);
+        res.status(500).json({ error: "Failed to fetch comments" });
+        return;
+      }
+
+      res.status(200).json(results);
+    });
+  } catch (error) {
+    console.error("Error fetching comments:", error);
+    res.status(500).json({ error: "Failed to fetch comments" });
+  }
+});
+
+//create
+app.post("/react/add-review/:productId", async (req, res) => {
+  try {
+    const { userId, rating, review } = req.body;
+    const productId = req.params.productId; // Lấy productId từ URL params
+    const createdAt = new Date().toISOString().slice(0, 19).replace("T", " ");
+    const status = "Pending"; // Mặc định trạng thái là pending
+
+    // Kiểm tra xem người dùng đã mua sản phẩm này chưa
+    const checkOrderSql = `
+      SELECT od.product_id 
+      FROM orders o 
+      JOIN order_details od ON o.id = od.order_id 
+      WHERE o.user_id = ? AND od.product_id = ?
+    `;
+    con.query(checkOrderSql, [userId, productId], (err, results) => {
+      if (err) {
+        console.error("Error checking order:", err);
+        res.status(500).json({ error: "Failed to check order" });
+        return;
+      }
+
+      if (results.length === 0) {
+        // Nếu sản phẩm không tồn tại trong đơn hàng của người dùng
+        res.status(403).json({ error: "User has not purchased this product" });
+      } else {
+        // Nếu sản phẩm tồn tại trong đơn hàng của người dùng, thêm đánh giá vào bảng 'comments'
+        const insertReviewSql =
+          "INSERT INTO comments (product_id, user_id, rating, review, status, created_at) VALUES (?, ?, ?, ?, ?, ?)";
+        con.query(
+          insertReviewSql,
+          [productId, userId, rating, review, status, createdAt],
+          (err, result) => {
+            if (err) {
+              console.error("Error adding review:", err);
+              res.status(500).json({ error: "Failed to add review" });
+              return;
+            }
+
+            res.status(200).json({ message: "Review added successfully" });
+          }
+        );
+      }
+    });
+  } catch (error) {
+    console.error("Error adding review:", error);
+    res.status(500).json({ error: "Failed to add review" });
+  }
 });

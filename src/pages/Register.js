@@ -53,7 +53,7 @@ const Register = () => {
 
       if (response.ok) {
         setSuccess("Registration successful!");
-        alert("Login successfully !");
+        alert("Registration successfully !");
         window.location = "/login";
       } else {
         setError(data.error || "An error occurred.");

@@ -18,12 +18,14 @@ const Sidebar = () => {
   return (
     <Drawer variant="permanent">
       <List>
-        <ListItem button key="Home">
-          <ListItemIcon>
-            <HomeIcon />
-          </ListItemIcon>
-          <ListItemText primary="Home" />
-        </ListItem>
+        <a href="/" style={{ textDecoration: "none", color: "inherit" }}>
+          <ListItem button key="Home">
+            <ListItemIcon>
+              <HomeIcon />
+            </ListItemIcon>
+            <ListItemText primary="Home" />
+          </ListItem>
+        </a>
         <a
           href="/dashboard"
           style={{ textDecoration: "none", color: "inherit" }}

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Container, Grid, Paper } from "@mui/material";
 import {
   LineChart,
@@ -12,6 +12,8 @@ import {
 } from "recharts";
 import Sidebar from "./sidebar";
 import HeaderDash from "./headerDash";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 const data = [
   { name: "Jan", uv: 4000, pv: 2400, amt: 2400 },
   { name: "Feb", uv: 3000, pv: 1398, amt: 2210 },
@@ -22,6 +24,34 @@ const data = [
   { name: "Jul", uv: 3490, pv: 4300, amt: 2100 },
 ];
 const Dashboard = () => {
+  const navigate = useNavigate();
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const infoUser = JSON.parse(localStorage.getItem("user"));
+  const userId = infoUser ? infoUser.id : null;
+  useEffect(() => {
+    const infoUser = JSON.parse(localStorage.getItem("user"));
+    const userId = infoUser ? infoUser.id : null;
+    console.log(userId);
+    const fetchUserRole = async () => {
+      try {
+        const response = await axios.get(
+          `http://localhost:8081/react/userRoles/${userId}`
+        );
+        const roles = response.data.roles;
+        console.log(roles);
+        if (roles.includes("admin")) {
+        } else {
+          navigate("/404");
+        }
+      } catch (error) {
+        console.error("Error fetching user roles", error);
+      }
+    };
+
+    fetchUserRole();
+  }, [navigate]);
+
   return (
     <>
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>

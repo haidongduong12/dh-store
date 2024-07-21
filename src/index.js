@@ -18,8 +18,10 @@ import Orders from "./component/orders/order";
 import EditOrderModal from "./component/orders/EditOrderModal";
 import ViewOrder from "./component/orders/viewOrder";
 import InfoPage from "./pages/InfoPage";
+import Shop from "./pages/Shop";
 import HistoryOrder from "./pages/HistoryOrder";
 import HistoryOrderDetails from "./pages/HistoryOrderDetails";
+import SearchResults from "./component/searchResults";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 
@@ -33,13 +35,16 @@ const routing = (
         <Route path="/register" element={<Register />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
+        <Route path="/shop" element={<Shop />} />
         <Route path="/info" element={<InfoPage />} />
         <Route path="/history-order" element={<HistoryOrder />} />
         <Route
           path="/history-order-details/:id"
           element={<HistoryOrderDetails />}
         />
+        <Route path="/search" element={<SearchResults />} />
         <Route path="/dashboard" element={<Dashboard />} />
+
         <Route path="/productPage" element={<ProductPage />} />
         <Route path="/edit-products/:id" element={<EditProductModal />} />
         <Route path="/categoryPage" element={<Categories />} />

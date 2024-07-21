@@ -1,16 +1,20 @@
 import React, { Fragment, useEffect, useState } from "react";
-import cat1 from "../theme/bootstrap-shop-template/bootstrap-shop-template/img/cat-1.jpg";
-import cat2 from "../theme/bootstrap-shop-template/bootstrap-shop-template/img/cat-2.jpg";
-import cat3 from "../theme/bootstrap-shop-template/bootstrap-shop-template/img/cat-3.jpg";
-import cat4 from "../theme/bootstrap-shop-template/bootstrap-shop-template/img/cat-4.jpg";
-import cat5 from "../theme/bootstrap-shop-template/bootstrap-shop-template/img/cat-5.jpg";
-import cat6 from "../theme/bootstrap-shop-template/bootstrap-shop-template/img/cat-6.jpg";
+
 import off1 from "../theme/bootstrap-shop-template/bootstrap-shop-template/img/offer-1.png";
 import off2 from "../theme/bootstrap-shop-template/bootstrap-shop-template/img/offer-2.png";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { Pagination } from "@mui/material";
+
 const Main = () => {
   const [productAll, setProductAll] = useState([]);
+  const infoUser = JSON.parse(localStorage.getItem("user"));
+  const idUser = infoUser ? infoUser.id : null;
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const productsPerPage = 4;
+
+  const [category, setCategory] = useState([]);
 
   const navigate = useNavigate();
 
@@ -19,19 +23,62 @@ const Main = () => {
       const response = await axios.get(
         "http://localhost:8081/react/show-product"
       );
-
       setProductAll(response.data);
     } catch (error) {
       console.error("Error fetching product !");
     }
   };
+
+  const fetchCategory = async () => {
+    try {
+      const response = await axios.get(
+        "http://localhost:8081/react/show-category"
+      );
+      setCategory(response.data);
+      console.log(category);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    }
+  };
+
   useEffect(() => {
     fetchAllProduct();
+    fetchCategory();
   }, []);
 
   const detailsPage = (productId) => {
     navigate(`/ProductDetails/${productId}`);
   };
+
+  const handlePageChange = (event, value) => {
+    setCurrentPage(value);
+  };
+
+  const indexOfLastProduct = currentPage * productsPerPage;
+  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
+  const currentProducts = productAll.slice(
+    indexOfFirstProduct,
+    indexOfLastProduct
+  );
+  const totalPages = Math.ceil(productAll.length / productsPerPage);
+
+  const addToCart = async (productId) => {
+    try {
+      const response = await axios.post(
+        "http://localhost:8081/react/add-to-cart",
+        {
+          userId: idUser,
+          productId: productId,
+          quantity: 1,
+        }
+      );
+      alert("Add to cart successfully !");
+      navigate("/cart");
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+    }
+  };
+
   return (
     <div>
       <>
@@ -80,98 +127,32 @@ const Main = () => {
         {/* Categories Start */}
         <div className="container-fluid pt-5">
           <div className="row px-xl-5 pb-3">
-            <div className="col-lg-4 col-md-6 pb-1">
-              <div
-                className="cat-item d-flex flex-column border mb-4"
-                style={{ padding: 30 }}
-              >
-                <p className="text-right">15 Products</p>
-                <a
-                  href=""
-                  className="cat-img position-relative overflow-hidden mb-3"
+            {category.map((item, index) => (
+              <div className="col-lg-4 col-md-6 pb-1" key={index}>
+                <div
+                  className="cat-item d-flex flex-column border mb-4"
+                  style={{ padding: 30 }}
                 >
-                  <img className="img-fluid" src={cat1} alt="ImageBanner" />
-                </a>
-                <h5 className="font-weight-semi-bold m-0">Men's dresses</h5>
+                  <p className="text-right">15 Products</p>
+                  <a
+                    href=""
+                    className="cat-img position-relative overflow-hidden mb-3"
+                  >
+                    <img
+                      className="img-fluid"
+                      src={`../uploads/${item.category_image}`}
+                      alt={item.category_name}
+                    />
+                  </a>
+                  <h5 className="font-weight-semi-bold m-0">
+                    {item.category_name}
+                  </h5>
+                </div>
               </div>
-            </div>
-            <div className="col-lg-4 col-md-6 pb-1">
-              <div
-                className="cat-item d-flex flex-column border mb-4"
-                style={{ padding: 30 }}
-              >
-                <p className="text-right">15 Products</p>
-                <a
-                  href=""
-                  className="cat-img position-relative overflow-hidden mb-3"
-                >
-                  <img className="img-fluid" src={cat2} alt="ImageBanner" />
-                </a>
-                <h5 className="font-weight-semi-bold m-0">Women's dresses</h5>
-              </div>
-            </div>
-            <div className="col-lg-4 col-md-6 pb-1">
-              <div
-                className="cat-item d-flex flex-column border mb-4"
-                style={{ padding: 30 }}
-              >
-                <p className="text-right">15 Products</p>
-                <a
-                  href="#"
-                  className="cat-img position-relative overflow-hidden mb-3"
-                >
-                  <img className="img-fluid" src={cat3} alt="ImageBanner" />
-                </a>
-                <h5 className="font-weight-semi-bold m-0">Baby's dresses</h5>
-              </div>
-            </div>
-            <div className="col-lg-4 col-md-6 pb-1">
-              <div
-                className="cat-item d-flex flex-column border mb-4"
-                style={{ padding: 30 }}
-              >
-                <p className="text-right">15 Products</p>
-                <a
-                  href="#"
-                  className="cat-img position-relative overflow-hidden mb-3"
-                >
-                  <img className="img-fluid" src={cat4} alt="ImageBanner" />
-                </a>
-                <h5 className="font-weight-semi-bold m-0">Accerssories</h5>
-              </div>
-            </div>
-            <div className="col-lg-4 col-md-6 pb-1">
-              <div
-                className="cat-item d-flex flex-column border mb-4"
-                style={{ padding: 30 }}
-              >
-                <p className="text-right">15 Products</p>
-                <a
-                  href=""
-                  className="cat-img position-relative overflow-hidden mb-3"
-                >
-                  <img className="img-fluid" src={cat5} alt="ImageBanner" />
-                </a>
-                <h5 className="font-weight-semi-bold m-0">Bags</h5>
-              </div>
-            </div>
-            <div className="col-lg-4 col-md-6 pb-1">
-              <div
-                className="cat-item d-flex flex-column border mb-4"
-                style={{ padding: 30 }}
-              >
-                <p className="text-right">15 Products</p>
-                <a
-                  href=""
-                  className="cat-img position-relative overflow-hidden mb-3"
-                >
-                  <img className="img-fluid" src={cat6} alt="ImageBanner" />
-                </a>
-                <h5 className="font-weight-semi-bold m-0">Shoes</h5>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
+
         {/* Categories End */}
         {/* Offer Start */}
         <div className="container-fluid offer pt-5">
@@ -224,364 +205,66 @@ const Main = () => {
               <span className="px-2">Trandy Products</span>
             </h2>
           </div>
-
           <div className="row px-xl-5 pb-3">
-            {productAll.map((items) => (
-              <Fragment key={items.id}>
-                <div className="col-lg-3 col-md-6 col-sm-12 pb-1">
-                  <div className="card product-item border-0 mb-4">
-                    <div className="card-header product-img position-relative overflow-hidden bg-transparent border p-0">
+            {currentProducts.map((product, index) => (
+              <div
+                key={product.id}
+                className="col-lg-3 col-md-6 col-sm-12 pb-1"
+              >
+                <div className="card product-item border-0 mb-4">
+                  <div className="card-header product-img position-relative overflow-hidden bg-transparent border p-0">
+                    <a href={`ProductDetails/${product.id}`}>
                       <img
                         className="img-fluid w-100"
-                        src={`uploads/${items.product_image}`}
-                        alt="Product"
+                        src={`../uploads/${product.product_image}`}
+                        alt={product.product_name}
                       />
-                    </div>
-                    <div className="card-body border-left border-right text-center p-0 pt-4 pb-3">
+                    </a>
+                  </div>
+                  <div className="card-body border-left border-right text-center p-0 pt-4 pb-3">
+                    <a href={`ProductDetails/${product.id}`}>
                       <h6 className="text-truncate mb-3">
-                        {items.product_name}
+                        {product.product_name}
                       </h6>
-                      <div className="d-flex justify-content-center">
-                        <h6>${items.product_price}</h6>
-                        <h6 className="text-muted ml-2">
-                          <del>${(items.product_price / 0.8).toFixed(2)}</del>
-                        </h6>
-                      </div>
-                    </div>
-                    <div className="card-footer d-flex justify-content-between bg-light border">
-                      <button
-                        className="btn btn-sm text-dark p-0"
-                        onClick={() => detailsPage(items.id)}
-                      >
-                        <i className="fas fa-eye text-primary mr-1" />
-                        View Detail
-                      </button>
-                      <a href="" className="btn btn-sm text-dark p-0">
-                        <i className="fas fa-shopping-cart text-primary mr-1" />
-                        Add To Cart
-                      </a>
+                    </a>
+                    <div className="d-flex justify-content-center">
+                      <h6>${product.product_price}</h6>
+                      <h6 className="text-muted ml-2">
+                        <del>$ {(product.product_price / 0.8).toFixed(2)}</del>
+                      </h6>
                     </div>
                   </div>
+                  <div className="card-footer d-flex justify-content-between bg-light border">
+                    <button
+                      href="#"
+                      className="btn btn-sm text-dark p-0"
+                      onClick={() => detailsPage(product.id)}
+                    >
+                      <i className="fas fa-eye text-primary mr-1"></i> View
+                      Detail
+                    </button>
+                    <button
+                      onClick={() => addToCart(product.id)}
+                      className="btn btn-sm text-dark p-0"
+                    >
+                      <i className="fas fa-shopping-cart text-primary mr-1"></i>
+                      Add To Cart
+                    </button>
+                  </div>
                 </div>
-              </Fragment>
+              </div>
             ))}
           </div>
-        </div>
-        {/* Products End */}
-        {/* Subscribe Start */}
-        <div className="container-fluid bg-secondary my-5">
-          <div className="row justify-content-md-center py-5 px-xl-5">
-            <div className="col-md-6 col-12 py-5">
-              <div className="text-center mb-2 pb-2">
-                <h2 className="section-title px-5 mb-3">
-                  <span className="bg-secondary px-2">Stay Updated</span>
-                </h2>
-                <p>
-                  Amet lorem at rebum amet dolores. Elitr lorem dolor sed amet
-                  diam labore at justo ipsum eirmod duo labore labore.
-                </p>
-              </div>
-              <form action="">
-                <div className="input-group">
-                  <input
-                    type="text"
-                    className="form-control border-white p-4"
-                    placeholder="Email Goes Here"
-                  />
-                  <div className="input-group-append">
-                    <button className="btn btn-primary px-4">Subscribe</button>
-                  </div>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-        {/* Subscribe End */}
-        {/* Products Start */}
-        <div className="container-fluid pt-5">
-          <div className="text-center mb-4">
-            <h2 className="section-title px-5">
-              <span className="px-2">Just Arrived</span>
-            </h2>
-          </div>
-          <div className="row px-xl-5 pb-3">
-            <div className="col-lg-3 col-md-6 col-sm-12 pb-1">
-              <div className="card product-item border-0 mb-4">
-                <div className="card-header product-img position-relative overflow-hidden bg-transparent border p-0">
-                  <img
-                    className="img-fluid w-100"
-                    src="img/product-1.jpg"
-                    alt="Product"
-                  />
-                </div>
-                <div className="card-body border-left border-right text-center p-0 pt-4 pb-3">
-                  <h6 className="text-truncate mb-3">Colorful Stylish Shirt</h6>
-                  <div className="d-flex justify-content-center">
-                    <h6>$123.00</h6>
-                    <h6 className="text-muted ml-2">
-                      <del>$123.00</del>
-                    </h6>
-                  </div>
-                </div>
-                <div className="card-footer d-flex justify-content-between bg-light border">
-                  <a href="" className="btn btn-sm text-dark p-0">
-                    <i className="fas fa-eye text-primary mr-1" />
-                    View Detail
-                  </a>
-                  <a href="/cart" className="btn btn-sm text-dark p-0">
-                    <i className="fas fa-shopping-cart text-primary mr-1" />
-                    Add To Cart
-                  </a>
-                </div>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-6 col-sm-12 pb-1">
-              <div className="card product-item border-0 mb-4">
-                <div className="card-header product-img position-relative overflow-hidden bg-transparent border p-0">
-                  <img
-                    className="img-fluid w-100"
-                    src="img/product-2.jpg"
-                    alt=""
-                  />
-                </div>
-                <div className="card-body border-left border-right text-center p-0 pt-4 pb-3">
-                  <h6 className="text-truncate mb-3">Colorful Stylish Shirt</h6>
-                  <div className="d-flex justify-content-center">
-                    <h6>$123.00</h6>
-                    <h6 className="text-muted ml-2">
-                      <del>$123.00</del>
-                    </h6>
-                  </div>
-                </div>
-                <div className="card-footer d-flex justify-content-between bg-light border">
-                  <a href="" className="btn btn-sm text-dark p-0">
-                    <i className="fas fa-eye text-primary mr-1" />
-                    View Detail
-                  </a>
-                  <a href="" className="btn btn-sm text-dark p-0">
-                    <i className="fas fa-shopping-cart text-primary mr-1" />
-                    Add To Cart
-                  </a>
-                </div>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-6 col-sm-12 pb-1">
-              <div className="card product-item border-0 mb-4">
-                <div className="card-header product-img position-relative overflow-hidden bg-transparent border p-0">
-                  <img
-                    className="img-fluid w-100"
-                    src="img/product-3.jpg"
-                    alt=""
-                  />
-                </div>
-                <div className="card-body border-left border-right text-center p-0 pt-4 pb-3">
-                  <h6 className="text-truncate mb-3">Colorful Stylish Shirt</h6>
-                  <div className="d-flex justify-content-center">
-                    <h6>$123.00</h6>
-                    <h6 className="text-muted ml-2">
-                      <del>$123.00</del>
-                    </h6>
-                  </div>
-                </div>
-                <div className="card-footer d-flex justify-content-between bg-light border">
-                  <a href="" className="btn btn-sm text-dark p-0">
-                    <i className="fas fa-eye text-primary mr-1" />
-                    View Detail
-                  </a>
-                  <a href="" className="btn btn-sm text-dark p-0">
-                    <i className="fas fa-shopping-cart text-primary mr-1" />
-                    Add To Cart
-                  </a>
-                </div>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-6 col-sm-12 pb-1">
-              <div className="card product-item border-0 mb-4">
-                <div className="card-header product-img position-relative overflow-hidden bg-transparent border p-0">
-                  <img
-                    className="img-fluid w-100"
-                    src="img/product-4.jpg"
-                    alt=""
-                  />
-                </div>
-                <div className="card-body border-left border-right text-center p-0 pt-4 pb-3">
-                  <h6 className="text-truncate mb-3">Colorful Stylish Shirt</h6>
-                  <div className="d-flex justify-content-center">
-                    <h6>$123.00</h6>
-                    <h6 className="text-muted ml-2">
-                      <del>$123.00</del>
-                    </h6>
-                  </div>
-                </div>
-                <div className="card-footer d-flex justify-content-between bg-light border">
-                  <a href="" className="btn btn-sm text-dark p-0">
-                    <i className="fas fa-eye text-primary mr-1" />
-                    View Detail
-                  </a>
-                  <a href="" className="btn btn-sm text-dark p-0">
-                    <i className="fas fa-shopping-cart text-primary mr-1" />
-                    Add To Cart
-                  </a>
-                </div>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-6 col-sm-12 pb-1">
-              <div className="card product-item border-0 mb-4">
-                <div className="card-header product-img position-relative overflow-hidden bg-transparent border p-0">
-                  <img
-                    className="img-fluid w-100"
-                    src="img/product-5.jpg"
-                    alt=""
-                  />
-                </div>
-                <div className="card-body border-left border-right text-center p-0 pt-4 pb-3">
-                  <h6 className="text-truncate mb-3">Colorful Stylish Shirt</h6>
-                  <div className="d-flex justify-content-center">
-                    <h6>$123.00</h6>
-                    <h6 className="text-muted ml-2">
-                      <del>$123.00</del>
-                    </h6>
-                  </div>
-                </div>
-                <div className="card-footer d-flex justify-content-between bg-light border">
-                  <a href="" className="btn btn-sm text-dark p-0">
-                    <i className="fas fa-eye text-primary mr-1" />
-                    View Detail
-                  </a>
-                  <a href="" className="btn btn-sm text-dark p-0">
-                    <i className="fas fa-shopping-cart text-primary mr-1" />
-                    Add To Cart
-                  </a>
-                </div>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-6 col-sm-12 pb-1">
-              <div className="card product-item border-0 mb-4">
-                <div className="card-header product-img position-relative overflow-hidden bg-transparent border p-0">
-                  <img
-                    className="img-fluid w-100"
-                    src="img/product-6.jpg"
-                    alt=""
-                  />
-                </div>
-                <div className="card-body border-left border-right text-center p-0 pt-4 pb-3">
-                  <h6 className="text-truncate mb-3">Colorful Stylish Shirt</h6>
-                  <div className="d-flex justify-content-center">
-                    <h6>$123.00</h6>
-                    <h6 className="text-muted ml-2">
-                      <del>$123.00</del>
-                    </h6>
-                  </div>
-                </div>
-                <div className="card-footer d-flex justify-content-between bg-light border">
-                  <a href="" className="btn btn-sm text-dark p-0">
-                    <i className="fas fa-eye text-primary mr-1" />
-                    View Detail
-                  </a>
-                  <a href="" className="btn btn-sm text-dark p-0">
-                    <i className="fas fa-shopping-cart text-primary mr-1" />
-                    Add To Cart
-                  </a>
-                </div>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-6 col-sm-12 pb-1">
-              <div className="card product-item border-0 mb-4">
-                <div className="card-header product-img position-relative overflow-hidden bg-transparent border p-0">
-                  <img
-                    className="img-fluid w-100"
-                    src="img/product-7.jpg"
-                    alt=""
-                  />
-                </div>
-                <div className="card-body border-left border-right text-center p-0 pt-4 pb-3">
-                  <h6 className="text-truncate mb-3">Colorful Stylish Shirt</h6>
-                  <div className="d-flex justify-content-center">
-                    <h6>$123.00</h6>
-                    <h6 className="text-muted ml-2">
-                      <del>$123.00</del>
-                    </h6>
-                  </div>
-                </div>
-                <div className="card-footer d-flex justify-content-between bg-light border">
-                  <a href="" className="btn btn-sm text-dark p-0">
-                    <i className="fas fa-eye text-primary mr-1" />
-                    View Detail
-                  </a>
-                  <a href="" className="btn btn-sm text-dark p-0">
-                    <i className="fas fa-shopping-cart text-primary mr-1" />
-                    Add To Cart
-                  </a>
-                </div>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-6 col-sm-12 pb-1">
-              <div className="card product-item border-0 mb-4">
-                <div className="card-header product-img position-relative overflow-hidden bg-transparent border p-0">
-                  <img
-                    className="img-fluid w-100"
-                    src="img/product-8.jpg"
-                    alt=""
-                  />
-                </div>
-                <div className="card-body border-left border-right text-center p-0 pt-4 pb-3">
-                  <h6 className="text-truncate mb-3">Colorful Stylish Shirt</h6>
-                  <div className="d-flex justify-content-center">
-                    <h6>$123.00</h6>
-                    <h6 className="text-muted ml-2">
-                      <del>$123.00</del>
-                    </h6>
-                  </div>
-                </div>
-                <div className="card-footer d-flex justify-content-between bg-light border">
-                  <a href="" className="btn btn-sm text-dark p-0">
-                    <i className="fas fa-eye text-primary mr-1" />
-                    View Detail
-                  </a>
-                  <a href="" className="btn btn-sm text-dark p-0">
-                    <i className="fas fa-shopping-cart text-primary mr-1" />
-                    Add To Cart
-                  </a>
-                </div>
-              </div>
-            </div>
+          <div className="d-flex justify-content-center">
+            <Pagination
+              count={totalPages}
+              page={currentPage}
+              onChange={handlePageChange}
+              color="primary"
+            />
           </div>
         </div>
         {/* Products End */}
-        {/* Vendor Start */}
-        <div className="container-fluid py-5">
-          <div className="row px-xl-5">
-            <div className="col">
-              <div className="owl-carousel vendor-carousel">
-                <div className="vendor-item border p-4">
-                  <img src="img/vendor-1.jpg" alt="" />
-                </div>
-                <div className="vendor-item border p-4">
-                  <img src="img/vendor-2.jpg" alt="" />
-                </div>
-                <div className="vendor-item border p-4">
-                  <img src="img/vendor-3.jpg" alt="" />
-                </div>
-                <div className="vendor-item border p-4">
-                  <img src="img/vendor-4.jpg" alt="" />
-                </div>
-                <div className="vendor-item border p-4">
-                  <img src="img/vendor-5.jpg" alt="" />
-                </div>
-                <div className="vendor-item border p-4">
-                  <img src="img/vendor-6.jpg" alt="" />
-                </div>
-                <div className="vendor-item border p-4">
-                  <img src="img/vendor-7.jpg" alt="" />
-                </div>
-                <div className="vendor-item border p-4">
-                  <img src="img/vendor-8.jpg" alt="" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        {/* Vendor End */}
       </>
     </div>
   );
